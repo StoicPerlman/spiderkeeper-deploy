@@ -1,0 +1,14 @@
+graft docs
+graft src
+graft ci
+graft tests
+
+include .bumpversion.cfg
+include .editorconfig
+
+include LICENSE
+include README.rst
+
+include tox.ini .travis.yml appveyor.yml
+
+global-exclude *.py[cod] __pycache__ *.so *.dylib
