@@ -26,7 +26,7 @@ def main():
     '''spiderkeeper-deploy cli method'''
     url = get_option('skdeploy', 'url').rstrip('/')
     project = get_option('skdeploy', 'project')
-    jobs = json.loads(get_option("skdeploy", "jobs"))
+    jobs = json.loads(get_option('skdeploy', 'jobs'))
 
     auth = ('admin', 'admin')
 
@@ -43,6 +43,9 @@ def main():
 
 def get_project_id(url: str, project: str, auth: Tuple[str, str]):
     '''Gets project id if it exists else returns None'''
+
+    click.echo(f'Looking for {project} project in SpiderKeeper...')
+
     resp = req.get(url + PROJECTS_PATH, auth=auth)
 
     if resp.status_code != 200:
@@ -61,6 +64,9 @@ def get_project_id(url: str, project: str, auth: Tuple[str, str]):
 
 def create_project(url: str, project: str, auth: Tuple[str, str]):
     '''Creates project in SpiderKeeper and returns id'''
+
+    click.echo(f'Project not found creating project {project}...')
+
     params = {'project_name': project}
     resp = req.post(url + PROJECTS_PATH, data=params, auth=auth)
 
@@ -75,6 +81,9 @@ def create_project(url: str, project: str, auth: Tuple[str, str]):
 
 def upload_file(url: str, project_id: int, filename: str, auth: Tuple[str, str]):
     '''Uploads egg to SpiderKeeper'''
+
+    click.echo('Uploading egg...')
+
     upload_url = url + UPLOAD_PATH.format(project_id)
 
     with open(filename, 'rb') as f:
@@ -101,7 +110,7 @@ def update_jobs(url: str, project_id: int, jobs: dict, auth: Tuple[str, str]):
                 "spider_arguments": "arg1,arg2",
                 "desc": "description",
                 "run_type": "periodic",
-                "priority": "0",
+                "priority": 0,
                 "cron_minutes": "5",
                 "cron_hour": "*",
                 "cron_day_of_month": "*",
@@ -133,6 +142,9 @@ def update_jobs(url: str, project_id: int, jobs: dict, auth: Tuple[str, str]):
 def add_jobs(url: str, project_id: int, jobs: List[Dict[str, str]], auth: Tuple[str, str]):
     '''Adds jobs to SpiderKeeper'''
 
+    if len(jobs) > 0:
+        click.echo('Adding new jobs to SpiderKeeper...')
+
     for job in jobs:
         resp = req.post(url + JOBS_PATH.format(project_id), data=job, auth=auth)
 
@@ -145,6 +157,9 @@ def add_jobs(url: str, project_id: int, jobs: List[Dict[str, str]], auth: Tuple[
 
 def merge_jobs(url: str, project_id: int, jobs: List[Dict[str, str]], auth: Tuple[str, str]):
     '''Updates jobs in SpiderKeeper'''
+
+    if len(jobs) > 0:
+        click.echo('Updating existing jobs to SpiderKeeper...')
 
     for job in jobs:
         job_id = job.pop('job_instance_id')
@@ -161,6 +176,9 @@ def del_jobs(url: str, project_id: int, jobs: List[Dict[str, str]], auth: Tuple[
     '''Deletes jobs from SpiderKeeper'''
     referer = url
     headers = { 'Referer': referer }
+
+    if len(jobs) > 0:
+        click.echo('Deleting old jobs to SpiderKeeper...')
 
     for job in jobs:
         job_id = job['job_instance_id']
@@ -215,6 +233,8 @@ def get_option(section: str, option: str, default: str = None):
 
 def build_egg(project: str):
     '''Build egg in project root'''
+
+    click.echo('Building egg...')
     closest = closest_scrapy_cfg()
 
     if closest == '':
@@ -228,9 +248,9 @@ def build_egg(project: str):
         click.echo('No setup.py in project')
         exit(1)
 
-    d = tempfile.mkdtemp(prefix="scrapydeploy-")
+    d = tempfile.mkdtemp(prefix='scrapydeploy-')
 
-    with open(os.path.join(d, "stdout"), "wb") as o, open(os.path.join(d, "stderr"), "wb") as e:
+    with open(os.path.join(d, 'stdout'), 'wb') as o, open(os.path.join(d, 'stderr'), 'wb') as e:
         p = [sys.executable, 'setup.py', 'clean', '-a', 'bdist_egg', '-d', d]
         retry_on_eintr(check_call, p, stdout=o, stderr=e)
 
