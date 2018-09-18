@@ -16,6 +16,9 @@ from scrapy.utils.conf import get_config, closest_scrapy_cfg
 
 PROJECTS_PATH = '/api/projects'
 UPLOAD_PATH = '/project/{}/spider/upload'
+JOBS_PATH = '/api/projects/{}/jobs'
+UPDATE_JOB_PATH = '/api/projects/{}/jobs/{}'
+DEL_JOB_PATH = '/project/{}/job/{}/remove'
 
 
 @click.command()
@@ -35,6 +38,7 @@ def main():
     filename = build_egg(project)
     upload_file(url, project_id, filename, auth)
 
+    update_jobs(url, project_id, jobs, auth)
 
 
 def get_project_id(url: str, project: str, auth: Tuple[str, str]):
@@ -84,6 +88,124 @@ def upload_file(url: str, project_id: int, filename: str, auth: Tuple[str, str])
             click.echo(f'SpiderKeeper returned {resp.status_code}')
             exit(1)
 
+
+def update_jobs(url: str, project_id: int, jobs: dict, auth: Tuple[str, str]):
+    '''Deleted all jobs and readd.
+
+    Jobs in scrapy.cfg should be in the following format.
+    Note: all newlines must be indented at least 1 level.
+
+    jobs = [
+            {
+                "spider_name": "spider1",
+                "spider_arguments": "arg1,arg2",
+                "desc": "description",
+                "run_type": "periodic",
+                "priority": "0",
+                "cron_minutes": "5",
+                "cron_hour": "*",
+                "cron_day_of_month": "*",
+                "cron_day_of_week": "*",
+                "cron_month": "*"
+            }
+        ]
+
+    run_type can be "onetime" or "periodic"
+
+    priority can be -1, 0, 1, or 2. -1 = Low, 0 = Normal, 1 = High, 2 = Highest
+    '''
+    resp = req.get(url + JOBS_PATH.format(project_id), auth=auth)
+
+    if resp.status_code != 200:
+        click.echo('Unable to create jobs')
+        click.echo(f'SpiderKeeper returned {resp.status_code}')
+        exit(1)
+
+    old_jobs = resp.json()
+
+    (add, merge, delete) = get_job_list_matches(jobs, old_jobs)
+
+    add_jobs(url, project_id, add, auth)
+    merge_jobs(url, project_id, merge, auth)
+    del_jobs(url, project_id, delete, auth)
+
+
+def add_jobs(url: str, project_id: int, jobs: List[Dict[str, str]], auth: Tuple[str, str]):
+    '''Adds jobs to SpiderKeeper'''
+
+    for job in jobs:
+        resp = req.post(url + JOBS_PATH.format(project_id), data=job, auth=auth)
+
+        if resp.status_code != 200:
+            click.echo('Error while deleting old jobs. Jobs are in an inconsistant state.')
+            click.echo('Sorry about that :(')
+            click.echo(f'SpiderKeeper returned {resp.status_code}')
+            exit(1)
+
+
+def merge_jobs(url: str, project_id: int, jobs: List[Dict[str, str]], auth: Tuple[str, str]):
+    '''Updates jobs in SpiderKeeper'''
+
+    for job in jobs:
+        job_id = job.pop('job_instance_id')
+        resp = req.put(url + UPDATE_JOB_PATH.format(project_id, job_id), data=job, auth=auth)
+
+        if resp.status_code != 200:
+            click.echo('Error while deleting old jobs. Jobs are in an inconsistant state.')
+            click.echo('Sorry about that :(')
+            click.echo(f'SpiderKeeper returned {resp.status_code}')
+            exit(1)
+
+
+def del_jobs(url: str, project_id: int, jobs: List[Dict[str, str]], auth: Tuple[str, str]):
+    '''Deletes jobs from SpiderKeeper'''
+    referer = url
+    headers = { 'Referer': referer }
+
+    for job in jobs:
+        job_id = job['job_instance_id']
+        resp = req.get(url + DEL_JOB_PATH.format(project_id, job_id), headers=headers, auth=auth)
+
+        if resp.status_code != 200:
+            click.echo('Error while deleting old jobs. Jobs are in an inconsistant state.')
+            click.echo('Sorry about that :(')
+            click.echo(f'SpiderKeeper returned {resp.status_code}')
+            exit(1)
+
+
+def get_job_list_matches(jobs: List[Dict[str, str]], old_jobs: List[Dict[str, str]]):
+    '''
+    Takes jobs from scrapy.cfg and compares them to jobs already in SpiderKeeper.
+    A job matches if it has the same cron settings. Returns tuple (add, merge, delete)
+
+    add: Jobs in scrapy.cfg and not yet in SpiderKeeper
+
+    merge: Jobs in both scrapy.cfg and SpiderKeeper
+
+    delete: Jobs not in scrapy.cfg but is in SpiderKeeper
+    '''
+    merge = []
+    delete = []
+
+    for old_job in old_jobs:
+        old_job_cron_info = {k: old_job[k] for k in old_job if k.startswith('cron_')}
+
+        for job in jobs:
+            job_cron_info = {k: job[k] for k in job if k.startswith('cron_')}
+
+            # job exists in both new and old
+            if job_cron_info == old_job_cron_info:
+                job['job_instance_id'] = old_job['job_instance_id']
+                merge.append(job)
+                break
+        else:
+            # old_job does not exists in new jobs list
+            delete.append(old_job)
+
+    # anything left must be added
+    add = [job for job in jobs if 'job_instance_id' not in job]
+
+    return (add, merge, delete)
 
 def get_option(section: str, option: str, default: str = None):
     '''Gets option from scrapy.cfg in project root'''
