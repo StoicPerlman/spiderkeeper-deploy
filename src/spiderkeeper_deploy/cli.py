@@ -12,7 +12,7 @@ from typing import List, Tuple, Dict
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.conf import get_config, closest_scrapy_cfg
 
-DEFAULT_URL = 'http://localhost:8080'
+DEFAULT_URL = 'http://localhost:5000'
 DEFAULT_PROJECT = 'scrapy'
 DEFAULT_JOBS = ''
 DEFAULT_AUTH = 'admin'
