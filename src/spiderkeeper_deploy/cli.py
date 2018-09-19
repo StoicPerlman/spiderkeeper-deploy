@@ -14,8 +14,10 @@ from scrapy.utils.conf import get_config, closest_scrapy_cfg
 
 DEFAULT_URL = 'http://localhost:5000'
 DEFAULT_PROJECT = 'scrapy'
-DEFAULT_JOBS = ''
+DEFAULT_JOBS = '[]'
 DEFAULT_AUTH = 'admin'
+
+CRON_KEYS = ('cron_minutes', 'cron_hour', 'cron_day_of_month', 'cron_day_of_week', 'cron_month')
 
 PROJECTS_PATH = '/api/projects'
 UPLOAD_PATH = '/project/{}/spider/upload'
@@ -27,23 +29,18 @@ DEL_JOB_PATH = '/project/{}/job/{}/remove'
 @click.command()
 @click.option('--url', '-u',
                 help='Server name or ip. Default: http://localhost:8080',
-                default=DEFAULT_URL,
                 metavar='')
 @click.option('--project', '-p',
                 help='Project name.',
-                default=DEFAULT_PROJECT,
                 metavar='')
 @click.option('--jobs', '-j',
                 help='Jobs in json format',
-                default=DEFAULT_JOBS,
                 metavar='')
 @click.option('--user',
                 help='Default: admin',
-                default=DEFAULT_AUTH,
                 metavar='')
 @click.option('--password',
                 help='Will use ENV SK_PASSWORD if present. Default: admin',
-                default=DEFAULT_AUTH,
                 metavar='')
 def main(url, project, jobs, user, password):
     '''Deploy scrapy projects to SpiderKeeper.
@@ -68,49 +65,70 @@ def main(url, project, jobs, user, password):
 
 def get_params(url, project, jobs, user, password):
 
-    if url == DEFAULT_URL:
-        url = get_option('skdeploy', 'url', DEFAULT_URL).rstrip('/')
+    if url == None:
+        url = get_option('skdeploy', 'url')
 
-        if url == DEFAULT_URL:
-            url = click.prompt(f'Url', default=DEFAULT_URL).rstrip('/')
+        if url == None:
+            url = click.prompt(f'Url', default=DEFAULT_URL)
 
-    if project == DEFAULT_PROJECT:
-        project = get_option('skdeploy', 'project', DEFAULT_PROJECT)
+    url = url.rstrip('/')
 
-        if project == DEFAULT_PROJECT:
-            project = get_option('deploy', 'project', DEFAULT_PROJECT)
+    if project == None:
+        project = get_option('skdeploy', 'project')
 
-            if project == DEFAULT_PROJECT:
+        if project == None:
+            project = get_option('deploy', 'project')
+
+            if project == None:
                 project = click.prompt(f'Project', default=DEFAULT_PROJECT)
 
-    if jobs == DEFAULT_JOBS:
-        jobs = get_option('skdeploy', 'jobs', DEFAULT_JOBS)
+    if jobs == None:
+        jobs = get_option('skdeploy', 'jobs')
 
-        if jobs == DEFAULT_JOBS:
-            jobs = click.prompt(f'Jobs', default=DEFAULT_JOBS)
+        if jobs == None:
+            jobs = click.prompt(f'Jobs', default='')
 
-            if jobs == DEFAULT_JOBS:
-                jobs = '[]'
+            if jobs == '':
+                jobs = DEFAULT_JOBS
 
     try:
-        json.loads(jobs)
+        jobs = json.loads(jobs)
+        ensure_good_jobs(jobs)
     except:
         click.echo('Unable to load jobs. Invalid JSON format?')
         exit(1)
 
-    if user == DEFAULT_AUTH:
-        user = get_option('skdeploy', 'user', DEFAULT_AUTH)
+    if user == None:
+        user = get_option('skdeploy', 'user')
 
-        if user == DEFAULT_AUTH:
+        if user == None:
             user = click.prompt(f'User', default=DEFAULT_AUTH)
 
-    if password == DEFAULT_AUTH:
-        password = os.environ.get('SK_PASSWORD', DEFAULT_AUTH)
+    if password == None:
+        password = os.environ.get('SK_PASSWORD', None)
 
-        if password == DEFAULT_AUTH:
+        if password == None:
             password = click.prompt(f'Password', default=DEFAULT_AUTH, hide_input=True)
 
     return url, project, jobs, (user, password)
+
+
+def ensure_good_jobs(jobs: List[Dict[str, str]]):
+    '''Make sure every job has params required for matching.'''
+
+    for job in jobs:
+        if 'spider_name' not in job:
+            click.echo('Every job must have spider_name defined')
+            exit(1)
+
+        if 'spider_arguments' not in job:
+            job['spider_arguments'] = None
+
+
+
+        for key in CRON_KEYS:
+            if key not in job:
+                job[key] = '*'
 
 
 def get_project_id(url: str, project: str, auth: Tuple[str, str]):
@@ -300,9 +318,10 @@ def get_job_list_matches(jobs: List[Dict[str, str]], old_jobs: List[Dict[str, st
 
     return (add, merge, delete)
 
-def get_option(section: str, option: str, default: str = None, cfg = get_config()):
+
+def get_option(section: str, option: str, cfg = get_config()):
     '''Gets option from scrapy.cfg in project root'''
-    return cfg.get(section, option) if cfg.has_option(section, option) else default
+    return cfg.get(section, option) if cfg.has_option(section, option) else None
 
 
 def build_egg(project: str):
