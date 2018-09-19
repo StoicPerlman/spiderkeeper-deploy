@@ -27,21 +27,11 @@ DEL_JOB_PATH = '/project/{}/job/{}/remove'
 
 
 @click.command()
-@click.option('--url', '-u',
-                help='Server name or ip. Default: http://localhost:8080',
-                metavar='')
-@click.option('--project', '-p',
-                help='Project name.',
-                metavar='')
-@click.option('--jobs', '-j',
-                help='Jobs in json format',
-                metavar='')
-@click.option('--user',
-                help='Default: admin',
-                metavar='')
-@click.option('--password',
-                help='Will use ENV SK_PASSWORD if present. Default: admin',
-                metavar='')
+@click.option('--url', '-u', help='Server name or ip. Default: http://localhost:8080', metavar='')
+@click.option('--project', '-p', help='Project name.', metavar='')
+@click.option('--jobs', '-j', help='Jobs in json format', metavar='')
+@click.option('--user', help='Default: admin', metavar='')
+@click.option('--password', help='Will use ENV SK_PASSWORD if present. Default: admin', metavar='')
 def main(url, project, jobs, user, password):
     '''Deploy scrapy projects to SpiderKeeper.
 
@@ -55,7 +45,7 @@ def main(url, project, jobs, user, password):
     project_id = get_project_id(url, project, auth)
 
     if project_id == None:
-         project_id = create_project(url, project, auth)
+        project_id = create_project(url, project, auth)
 
     filename = build_egg(project)
     upload_file(url, project_id, filename, auth)
@@ -124,8 +114,6 @@ def ensure_good_jobs(jobs: List[Dict[str, str]]):
         if 'spider_arguments' not in job:
             job['spider_arguments'] = None
 
-
-
         for key in CRON_KEYS:
             if key not in job:
                 job[key] = '*'
@@ -143,7 +131,7 @@ def get_project_id(url: str, project: str, auth: Tuple[str, str]):
         click.echo(f'SpiderKeeper returned {resp.status_code}')
         exit(1)
 
-    projects_json= resp.json()
+    projects_json = resp.json()
 
     for p in projects_json:
         if p['project_name'] == project:
@@ -177,9 +165,9 @@ def upload_file(url: str, project_id: int, filename: str, auth: Tuple[str, str])
     upload_url = url + UPLOAD_PATH.format(project_id)
 
     with open(filename, 'rb') as f:
-        files = { 'file': f }
+        files = {'file': f}
         referer = url
-        headers = { 'Referer': referer }
+        headers = {'Referer': referer}
         resp = req.post(upload_url, files=files, auth=auth, headers=headers)
 
         if resp.status_code != 200:
@@ -265,7 +253,7 @@ def merge_jobs(url: str, project_id: int, jobs: List[Dict[str, str]], auth: Tupl
 def del_jobs(url: str, project_id: int, jobs: List[Dict[str, str]], auth: Tuple[str, str]):
     '''Deletes jobs from SpiderKeeper'''
     referer = url
-    headers = { 'Referer': referer }
+    headers = {'Referer': referer}
 
     if len(jobs) > 0:
         click.echo('Deleting old jobs to SpiderKeeper...')
@@ -319,7 +307,7 @@ def get_job_list_matches(jobs: List[Dict[str, str]], old_jobs: List[Dict[str, st
     return (add, merge, delete)
 
 
-def get_option(section: str, option: str, cfg = get_config()):
+def get_option(section: str, option: str, cfg=get_config()):
     '''Gets option from scrapy.cfg in project root'''
     return cfg.get(section, option) if cfg.has_option(section, option) else None
 
