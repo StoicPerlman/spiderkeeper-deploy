@@ -5,14 +5,17 @@ import json
 import click
 import shutil
 import tempfile
-import configparser
 import requests as req
-from typing import List, Tuple, Dict
 from subprocess import check_call
 from scrapyd_client import deploy
-from requests.auth import HTTPBasicAuth
+from typing import List, Tuple, Dict
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.conf import get_config, closest_scrapy_cfg
+
+DEFAULT_URL = 'http://localhost:8080'
+DEFAULT_PROJECT = 'scrapy'
+DEFAULT_JOBS = ''
+DEFAULT_AUTH = 'admin'
 
 PROJECTS_PATH = '/api/projects'
 UPLOAD_PATH = '/project/{}/spider/upload'
@@ -22,13 +25,30 @@ DEL_JOB_PATH = '/project/{}/job/{}/remove'
 
 
 @click.command()
-def main():
-    '''spiderkeeper-deploy cli method'''
-    url = get_option('skdeploy', 'url').rstrip('/')
-    project = get_option('skdeploy', 'project')
-    jobs = json.loads(get_option('skdeploy', 'jobs'))
+@click.option('--url', '-u',
+                help='Server name or ip. Default: http://localhost:8080',
+                default=DEFAULT_URL)
+@click.option('--project', '-p',
+                help='Project name.',
+                default=DEFAULT_PROJECT)
+@click.option('--jobs', '-j',
+                help='Jobs in json format',
+                default=DEFAULT_JOBS)
+@click.option('--user',
+                help='Default: admin',
+                default=DEFAULT_AUTH)
+@click.option('--password',
+                help='Will use ENV SK_PASSWORD if present. Default: admin',
+                default=DEFAULT_AUTH)
+def main(url, project, jobs, user, password):
+    '''Deploy scrapy projects to Spider Keeper.
 
-    auth = ('admin', 'admin')
+    Hint: you can define CLI args in scrapy.cfg file in your project.
+
+    CLI args override scrapy.cfg
+    '''
+
+    url, project, jobs, auth = get_params(url, project, jobs, user, password)
 
     project_id = get_project_id(url, project, auth)
 
@@ -39,6 +59,53 @@ def main():
     upload_file(url, project_id, filename, auth)
 
     update_jobs(url, project_id, jobs, auth)
+
+
+def get_params(url, project, jobs, user, password):
+
+    if url == DEFAULT_URL:
+        url = get_option('skdeploy', 'url', DEFAULT_URL).rstrip('/')
+
+        if url == DEFAULT_URL:
+            url = click.prompt(f'Url', default=DEFAULT_URL).rstrip('/')
+
+    if project == DEFAULT_PROJECT:
+        project = get_option('skdeploy', 'project', DEFAULT_PROJECT)
+
+        if project == DEFAULT_PROJECT:
+            project = get_option('deploy', 'project', DEFAULT_PROJECT)
+
+            if project == DEFAULT_PROJECT:
+                project = click.prompt(f'Project', default=DEFAULT_PROJECT)
+
+    if jobs == DEFAULT_JOBS:
+        jobs = get_option('skdeploy', 'jobs', DEFAULT_JOBS)
+
+        if jobs == DEFAULT_JOBS:
+            jobs = click.prompt(f'Jobs', default=DEFAULT_JOBS)
+
+            if jobs == DEFAULT_JOBS:
+                jobs = '[]'
+
+    try:
+        json.loads(jobs)
+    except:
+        click.echo('Unable to load jobs. Invalid JSON format?')
+        exit(1)
+
+    if user == DEFAULT_AUTH:
+        user = get_option('skdeploy', 'user', DEFAULT_AUTH)
+
+        if user == DEFAULT_AUTH:
+            user = click.prompt(f'User', default=DEFAULT_AUTH)
+
+    if password == DEFAULT_AUTH:
+        password = os.environ.get('SK_PASSWORD', DEFAULT_AUTH)
+
+        if password == DEFAULT_AUTH:
+            password = click.prompt(f'Password', default=DEFAULT_AUTH, hide_input=True)
+
+    return url, project, jobs, (user, password)
 
 
 def get_project_id(url: str, project: str, auth: Tuple[str, str]):
@@ -225,9 +292,8 @@ def get_job_list_matches(jobs: List[Dict[str, str]], old_jobs: List[Dict[str, st
 
     return (add, merge, delete)
 
-def get_option(section: str, option: str, default: str = None):
+def get_option(section: str, option: str, default: str = None, cfg = get_config()):
     '''Gets option from scrapy.cfg in project root'''
-    cfg = get_config()
     return cfg.get(section, option) if cfg.has_option(section, option) else default
 
 
@@ -238,7 +304,7 @@ def build_egg(project: str):
     closest = closest_scrapy_cfg()
 
     if closest == '':
-        click.echo('No setup.py found')
+        click.echo('No scrapy.cfg found')
         exit(1)
 
     directory = os.path.dirname(closest)
@@ -261,4 +327,4 @@ def build_egg(project: str):
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
