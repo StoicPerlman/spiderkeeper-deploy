@@ -95,6 +95,9 @@ A job is defined as already existing in SpiderKeeper if spider_name,
 spider_arguments, cron_minutes, cron_hour, cron_day_of_month, cron_day_of_week,
 and cron_month all match what is in config.
 
+Note: spider_name is always required. spider_arguments can be omitted and will
+default to None. cron settings can be omitted and will default to "*"
+
 SpiderKeeper uses numbers to identify projects. This means it is possible to
 have two projects with the same name. spiderkeeper-deploy will use the first
 project who's name matches the project config value. If you have an existing
