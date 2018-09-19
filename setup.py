@@ -26,7 +26,7 @@ setup(
     name='spiderkeeper-deploy',
     version='0.1.0',
     license='MIT license',
-    description='Deploy to Spider Keeper',
+    description='Deploy to SpiderKeeper',
     long_description=read('README.rst'),
     author='Sam Kleiner',
     author_email='sam@skleiner.com',

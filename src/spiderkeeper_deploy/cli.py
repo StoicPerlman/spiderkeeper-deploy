@@ -27,21 +27,26 @@ DEL_JOB_PATH = '/project/{}/job/{}/remove'
 @click.command()
 @click.option('--url', '-u',
                 help='Server name or ip. Default: http://localhost:8080',
-                default=DEFAULT_URL)
+                default=DEFAULT_URL,
+                metavar='')
 @click.option('--project', '-p',
                 help='Project name.',
-                default=DEFAULT_PROJECT)
+                default=DEFAULT_PROJECT,
+                metavar='')
 @click.option('--jobs', '-j',
                 help='Jobs in json format',
-                default=DEFAULT_JOBS)
+                default=DEFAULT_JOBS,
+                metavar='')
 @click.option('--user',
                 help='Default: admin',
-                default=DEFAULT_AUTH)
+                default=DEFAULT_AUTH,
+                metavar='')
 @click.option('--password',
                 help='Will use ENV SK_PASSWORD if present. Default: admin',
-                default=DEFAULT_AUTH)
+                default=DEFAULT_AUTH,
+                metavar='')
 def main(url, project, jobs, user, password):
-    '''Deploy scrapy projects to Spider Keeper.
+    '''Deploy scrapy projects to SpiderKeeper.
 
     Hint: you can define CLI args in scrapy.cfg file in your project.
 
