@@ -266,7 +266,8 @@ def del_jobs(url: str, project_id: int, jobs: List[Dict[str, str]], auth: Tuple[
 def get_job_list_matches(jobs: List[Dict[str, str]], old_jobs: List[Dict[str, str]]):
     '''
     Takes jobs from scrapy.cfg and compares them to jobs already in SpiderKeeper.
-    A job matches if it has the same cron settings. Returns tuple (add, merge, delete)
+    A job matches if it has the same spider and cron settings.
+    Returns tuple (add, merge, delete)
 
     add: Jobs in scrapy.cfg and not yet in SpiderKeeper
 
@@ -277,11 +278,13 @@ def get_job_list_matches(jobs: List[Dict[str, str]], old_jobs: List[Dict[str, st
     merge = []
     delete = []
 
+    job_match_keys = lambda k: k.startswith('cron_') or k.startswith('spider_')
+
     for old_job in old_jobs:
-        old_job_cron_info = {k: old_job[k] for k in old_job if k.startswith('cron_')}
+        old_job_cron_info = {k: old_job[k] for k in old_job if job_match_keys(k)}
 
         for job in jobs:
-            job_cron_info = {k: job[k] for k in job if k.startswith('cron_')}
+            job_cron_info = {k: job[k] for k in job if job_match_keys(k)}
 
             # job exists in both new and old
             if job_cron_info == old_job_cron_info:
