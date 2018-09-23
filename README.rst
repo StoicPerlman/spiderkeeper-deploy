@@ -7,13 +7,11 @@ CLI tool to deploy Scrapy projects to SpiderKeeper
 Installation
 ============
 
-Not yet on PyPi
+PyPi
 
 ::
 
-    git clone https://github.com/StoicPerlman/spiderkeeper-deploy.git
-    cd spiderkeeper-deploy
-    pip install .
+    pip install spiderkeeper-deploy
 
 
 Usage
