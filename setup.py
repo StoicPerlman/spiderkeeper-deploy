@@ -31,6 +31,7 @@ setup(
     author='Sam Kleiner',
     author_email='sam@skleiner.com',
     url='https://github.com/StoicPerlman/spiderkeeper-deploy',
+    download_url='https://github.com/StoicPerlman/spiderkeeper-deploy/archive/0.1.0.tar.gz',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
