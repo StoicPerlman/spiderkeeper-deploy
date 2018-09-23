@@ -24,14 +24,14 @@ def read(*names, **kwargs):
 
 setup(
     name='spiderkeeper-deploy',
-    version='0.1.0',
+    version='0.1.1',
     license='MIT license',
     description='Deploy to SpiderKeeper',
     long_description=read('README.rst'),
     author='Sam Kleiner',
     author_email='sam@skleiner.com',
     url='https://github.com/StoicPerlman/spiderkeeper-deploy',
-    download_url='https://github.com/StoicPerlman/spiderkeeper-deploy/archive/0.1.0.tar.gz',
+    download_url='https://github.com/StoicPerlman/spiderkeeper-deploy/archive/0.1.1.tar.gz',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
