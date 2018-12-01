@@ -1,15 +1,16 @@
-import os
-import sys
 import glob
 import json
-import click
+import os
 import shutil
+import sys
 import tempfile
-import requests as req
 from subprocess import check_call
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
+
+import click
+import requests as req
+from scrapy.utils.conf import closest_scrapy_cfg, get_config
 from scrapy.utils.python import retry_on_eintr
-from scrapy.utils.conf import get_config, closest_scrapy_cfg
 
 DEFAULT_URL = 'http://localhost:5000'
 DEFAULT_PROJECT = 'scrapy'

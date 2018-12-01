@@ -1,25 +1,17 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import io
 import re
 from glob import glob
-from os.path import basename
-from os.path import dirname
-from os.path import join
-from os.path import splitext
+from os.path import basename, dirname, join, splitext
 
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 def read(*names, **kwargs):
-    return io.open(
-        join(dirname(__file__), *names),
-        encoding=kwargs.get('encoding', 'utf8')
-    ).read()
+    return io.open(join(dirname(__file__), *names), encoding=kwargs.get('encoding', 'utf8')).read()
 
 
 setup(
@@ -51,18 +43,9 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Utilities',
     ],
-    keywords=[
-        'spiderkeeper', 'scrapy', 'devops',
-    ],
-    install_requires=[
-        'click',
-        'configparser',
-        'requests',
-        'scrapy'
-    ],
-    entry_points={
-        'console_scripts': [
-            'spiderkeeper-deploy = spiderkeeper_deploy.cli:main',
-        ]
-    },
+    keywords=['spiderkeeper', 'scrapy', 'devops'],
+    install_requires=['click', 'configparser', 'requests', 'scrapy', 'scrapyd_client'],
+    entry_points={'console_scripts': [
+        'spiderkeeper-deploy = spiderkeeper_deploy.cli:main',
+    ]},
 )
