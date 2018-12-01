@@ -7,7 +7,6 @@ import shutil
 import tempfile
 import requests as req
 from subprocess import check_call
-from scrapyd_client import deploy
 from typing import List, Tuple, Dict
 from scrapy.utils.python import retry_on_eintr
 from scrapy.utils.conf import get_config, closest_scrapy_cfg
